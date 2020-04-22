@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head') %>
+  </head>
+  <body>
+    <main class="container">
+      <canvas id="game-screen" class="block" width="160" height="128"></canvas>
+      <script src="/socket.io/socket.io.js"></script>
+      <script src="js/game.js" roomId="<%= roomId %>"></script>
+    </main>
+  </body>
+</html>

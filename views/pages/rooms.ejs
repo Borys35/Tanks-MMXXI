@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head') %>
+  </head>
+  <body>
+    <main class="container">
+      <div class="section-container block">
+        <form class="form" method="post" action="/create">
+          <div class="form-group">
+            <label>Room name</label>
+            <input type="text" name="name" placeholder="Enter room name..." />
+          </div>
+          <div class="form-group">
+            <label>Password (not required)</label>
+            <input
+              type="password"
+              name="password"
+              placeholder="Enter password..."
+            />
+          </div>
+          <input type="submit" value="Create" />
+        </form>
+        <section class="list">
+          <form method="post" action="/join">
+            <ul>
+              <% Object.entries(rooms).forEach(([id, { name }]) => { %>
+              <li>
+                <button
+                  class="link"
+                  type="submit"
+                  name="roomId"
+                  value="<%= id %>"
+                >
+                  <%= name %>
+                </button>
+              </li>
+              <% }); %>
+            </ul>
+          </form>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
