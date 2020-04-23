@@ -1,6 +1,7 @@
 const uuidv4 = require('uuid').v4;
 
 const Player = require('./components/player');
+const Bullet = require('./components/bullet');
 
 module.exports = class Room {
   constructor(settings, io) {
@@ -9,7 +10,8 @@ module.exports = class Room {
     this.name = name;
     this.password = password;
     this.players = {};
-    this.state = { secondsToStart: 20, hasStarted: false };
+    this.bullets = [];
+    this.state = { secondsToStart: 5, hasStarted: false };
 
     this.io = io;
 
@@ -32,17 +34,43 @@ module.exports = class Room {
     let player = (this.players[playerId] = new Player(
       { x: 40, y: 20 },
       100,
-      3
+      0.6,
+      100
     ));
 
+    socket.emit('get_player', playerId);
+
+    let timer = 0;
     let lastTime = new Date().getTime();
     socket.on('input', (input) => {
       const nowTime = new Date().getTime();
       const deltaTime = (nowTime - lastTime) / 10;
       lastTime = nowTime;
 
-      // CHECKING COLLISIONS...
-      const modifiedPlayer = { ...player };
+      if (!this.state.hasStarted) return;
+
+      // INPUT ACTIONS
+      timer += deltaTime;
+      if (input.pressed) {
+        if (timer > player.shootRate) {
+          timer = 0;
+          const bullet = new Bullet(
+            {
+              x: player.position.x + player.direction.x * 11,
+              y: player.position.y + player.direction.y * 11,
+            },
+            { ...player.direction },
+            1,
+            10
+          );
+          this.bullets.push(bullet);
+        }
+      }
+
+      const modifiedPlayer = {
+        position: { ...player.position },
+        scale: { ...player.scale },
+      };
       if (input.up) {
         modifiedPlayer.position.y -= player.speed * deltaTime;
         player.direction.x = 0;
@@ -61,20 +89,22 @@ module.exports = class Room {
         player.direction.y = 0;
       }
 
-      // NO COLLISIONS = UPDATE PLAYER
-      if (!anyCollisions(Object.values(this.players))) {
-        player = modifiedPlayer;
+      // IF NO COLLISIONS...
+      if (!anyCollisions(modifiedPlayer, Object.values(this.players))) {
+        // ...UPDATE THE PLAYER
+        player.position = modifiedPlayer.position;
       }
 
-      function anyCollisions(players) {
-        // WITH OTHER PLAYERS
+      // CHECK COLLISIONS...
+      function anyCollisions(collider, players) {
+        // ...WITH OTHER PLAYERS
         for (const other of players.filter((p) => p !== player)) {
-          if (modifiedPlayer.collide(other)) {
+          if (Player.collide(collider, other)) {
             return true;
           }
         }
 
-        // WITH BLOCKS
+        // ...WITH BLOCKS
 
         // NO COLLISIONS
         return false;
@@ -85,6 +115,23 @@ module.exports = class Room {
   }
 
   update(deltaTime) {
-    this.io.to(this.roomId).emit('update', this.players);
+    for (let i = 0; i < this.bullets.length; i++) {
+      const bullet = this.bullets[i];
+      bullet.position.x += bullet.direction.x * bullet.speed * deltaTime;
+      bullet.position.y += bullet.direction.y * bullet.speed * deltaTime;
+
+      for (const id of Object.keys(this.players)) {
+        const player = this.players[id];
+        if (Bullet.collide(bullet, player)) {
+          player.health -= bullet.damage;
+          if (player.health <= 0) {
+            delete this.players[id];
+          }
+          this.bullets.splice(i, 1);
+        }
+      }
+    }
+
+    this.io.to(this.roomId).emit('update', this.players, this.bullets);
   }
 };

@@ -13,7 +13,7 @@ body {
 #game-screen {
   display: block;
   width: 640px;
-  height: 480px;
+  height: 512px;
   margin: auto;
   margin-top: 10px;
   image-rendering: -moz-crisp-edges;

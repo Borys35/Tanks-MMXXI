@@ -45,7 +45,9 @@ app.get('*', (req, res) => {
 
 io.on('connection', (socket) => {
   const { roomId } = socket.handshake.query;
-  rooms[roomId].callback(socket);
+  if (rooms[roomId]) {
+    rooms[roomId].callback(socket);
+  }
 });
 
 let lastTime = new Date().getTime();
