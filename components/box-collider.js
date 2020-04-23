@@ -1,9 +1,20 @@
 const GameObject = require('./game-object');
 
 module.exports = class BoxCollider extends GameObject {
-  constructor(position, direction, scale, destroyable) {
+  constructor(position, direction, scale) {
     super(position, direction, scale);
-    this.destroyable = destroyable;
+  }
+
+  static inBounds(collider) {
+    const { position, scale } = collider;
+    if (
+      position.x > scale.x / 2 &&
+      position.x + scale.x / 2 < 160 &&
+      position.y > scale.y / 2 &&
+      position.y + scale.y / 2 < 128
+    )
+      return false;
+    return true;
   }
 
   static collide(collider, otherCollider) {

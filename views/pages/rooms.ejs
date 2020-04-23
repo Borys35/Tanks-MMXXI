@@ -7,8 +7,9 @@
     <main class="container">
       <div class="section-container block">
         <form class="form" method="post" action="/create">
+          <h3>Create room</h3>
           <div class="form-group">
-            <label>Room name</label>
+            <label>Name</label>
             <input type="text" name="name" placeholder="Enter room name..." />
           </div>
           <div class="form-group">
@@ -19,12 +20,39 @@
               placeholder="Enter password..."
             />
           </div>
+          <div class="form-group">
+            <label>Level</label>
+            <div class="radio-group">
+              <input
+                type="radio"
+                id="level1"
+                name="levelIndex"
+                value="0"
+                checked
+              />
+              <label for="level1">Tanks #1</label>
+            </div>
+            <div class="radio-group">
+              <input type="radio" id="level2" name="levelIndex" value="1" />
+              <label for="level2">Tanks #2</label>
+            </div>
+            <div class="radio-group">
+              <input type="radio" id="level3" name="levelIndex" value="2" />
+              <label for="level3">Ships #1</label>
+            </div>
+            <div class="radio-group">
+              <input type="radio" id="level4" name="levelIndex" value="3" />
+              <label for="level4">Planes #1</label>
+            </div>
+          </div>
           <input type="submit" value="Create" />
         </form>
         <section class="list">
+          <h3>Rooms</h3>
           <form method="post" action="/join">
             <ul>
-              <% Object.entries(rooms).forEach(([id, { name }]) => { %>
+              <% const roomArray = Object.entries(rooms); %> <% if
+              (roomArray.length) { roomArray.forEach(([id, { name }]) => { %>
               <li>
                 <button
                   class="link"
@@ -35,7 +63,7 @@
                   <%= name %>
                 </button>
               </li>
-              <% }); %>
+              <% }); } else { %>No rooms<% } %>
             </ul>
           </form>
         </section>

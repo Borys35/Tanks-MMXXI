@@ -9,7 +9,8 @@ const roomId = script.getAttribute('roomId');
 
 let playerId = null;
 let players = {},
-  bullets = [];
+  bullets = [],
+  blocks = [];
 const playerImgs = [],
   bulletImgs = [],
   blockImgs = [];
@@ -21,7 +22,9 @@ socket.on('get_player', (id) => {
   playerId = id;
 });
 
-socket.on('update', (allPlayers, allBullets) => {
+socket.on('update', (allPlayers, allBullets, allBlocks, levelConfig) => {
+  const { type } = levelConfig;
+
   // SET PLAYERS
   players = allPlayers;
   // SET PLAYERS' IMAGES
@@ -29,7 +32,7 @@ socket.on('update', (allPlayers, allBullets) => {
     playerImgs.length = Object.keys(players).length;
     for (let i = 0; i < playerImgs.length; i++) {
       playerImgs[i] = new Image();
-      playerImgs[i].src = 'images/tank.png';
+      playerImgs[i].src = `images/${type}/player.png`;
     }
   }
 
@@ -40,7 +43,18 @@ socket.on('update', (allPlayers, allBullets) => {
     bulletImgs.length = bullets.length;
     for (let i = 0; i < bulletImgs.length; i++) {
       bulletImgs[i] = new Image();
-      bulletImgs[i].src = 'images/bullet.png';
+      bulletImgs[i].src = `images/${type}/bullet.png`;
+    }
+  }
+
+  // SET BLOCKS
+  blocks = allBlocks;
+  // SET BLOCKS' IMAGES
+  if (blockImgs.length !== blocks.length) {
+    blockImgs.length = blocks.length;
+    for (let i = 0; i < blockImgs.length; i++) {
+      blockImgs[i] = new Image();
+      blockImgs[i].src = `images/${type}/${blocks[i].image}.png`;
     }
   }
 });
@@ -96,36 +110,32 @@ function onKey(event, key, pressed) {
 setInterval(() => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  //#region DRAW OBJECTS
   // DRAW PLAYERS
-  const playerObjects = Object.values(players);
-  for (let i = 0; i < playerObjects.length; i++) {
-    const { position, direction } = playerObjects[i];
-    const img = playerImgs[i];
-    ctx.save();
-    ctx.translate(Math.round(position.x), Math.round(position.y));
-    if (!direction.x)
-      ctx.rotate(((direction.y === 1 ? 180 : 0) * Math.PI) / 180);
-    if (!direction.y)
-      ctx.rotate(((direction.x === 1 ? 90 : 270) * Math.PI) / 180);
-    ctx.drawImage(img, img.width / -2, img.height / -2);
-    ctx.restore();
-  }
-
+  draw(Object.values(players), playerImgs);
+  // DRAW BLOCKS
+  draw(blocks, blockImgs);
   // DRAW BULLETS
-  for (let i = 0; i < bullets.length; i++) {
-    const { position, direction } = bullets[i];
-    const img = bulletImgs[i];
-    ctx.save();
-    ctx.translate(Math.round(position.x), Math.round(position.y));
-    if (!direction.x)
-      ctx.rotate(((direction.y === 1 ? 180 : 0) * Math.PI) / 180);
-    if (!direction.y)
-      ctx.rotate(((direction.x === 1 ? 90 : 270) * Math.PI) / 180);
-    ctx.drawImage(img, img.width / -2, img.height / -2);
-    ctx.restore();
-  }
+  draw(bullets, bulletImgs);
 
-  // DRAW UI
+  // DRAWER
+  function draw(objects, images) {
+    for (let i = 0; i < objects.length; i++) {
+      const { position, direction } = objects[i];
+      const img = images[i];
+      ctx.save();
+      ctx.translate(Math.round(position.x), Math.round(position.y));
+      if (!direction.x)
+        ctx.rotate(((direction.y === 1 ? 180 : 0) * Math.PI) / 180);
+      if (!direction.y)
+        ctx.rotate(((direction.x === 1 ? 90 : 270) * Math.PI) / 180);
+      ctx.drawImage(img, img.width / -2, img.height / -2);
+      ctx.restore();
+    }
+  }
+  //#endregion
+
+  //#region DRAW UI
   if (playerId) {
     const player = players[playerId];
     ctx.font = 'small-caps 12px Arial';
@@ -142,6 +152,7 @@ setInterval(() => {
     ctx.textBaseline = 'middle';
     ctx.fillText(gameState.secondsToStart, canvas.width / 2, canvas.height / 2);
   }
+  //#endregion
 
   // SEND INPUT
   socket.emit('input', input);

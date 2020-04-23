@@ -1,16 +1,20 @@
+const getPixels = require('get-pixels');
 const uuidv4 = require('uuid').v4;
 
 const Player = require('./components/player');
 const Bullet = require('./components/bullet');
+const Block = require('./components/block');
+const { levels } = require('./gameconfig.json');
 
 module.exports = class Room {
   constructor(settings, io) {
-    const { roomId, name, password } = settings;
+    const { roomId, name, password, levelIndex } = settings;
     this.roomId = roomId;
     this.name = name;
     this.password = password;
     this.players = {};
     this.bullets = [];
+    this.blocks = [];
     this.state = { secondsToStart: 5, hasStarted: false };
 
     this.io = io;
@@ -23,20 +27,75 @@ module.exports = class Room {
       }
       io.to(this.roomId).emit('state', this.state);
     }, 1000);
+
+    this.levelConfig = levels[levelIndex];
+    if (this.levelConfig) this.createLevel(levelIndex, this.blocks);
   }
 
-  join() {}
+  createLevel(index, blocks) {
+    getPixels(
+      `./levels/${index < 10 ? `0${index}` : index}.png`,
+      (err, pixels) => {
+        if (err) return;
+        const { data, shape } = pixels;
+        for (let y = 0; y < shape[1]; y++) {
+          for (let x = 0; x < shape[0]; x++) {
+            let i = (y * shape[0] + x) * 4;
+            const r = data[i],
+              g = data[i + 1],
+              b = data[i + 2],
+              a = data[i + 3];
+            if (a !== 0) {
+              let block = null;
+              if (b === 255) {
+                block = new Block(
+                  { x: x * 16 + 8, y: y * 16 + 8 },
+                  { x: 0, y: 0 },
+                  { x: 16, y: 16 },
+                  'blue',
+                  false,
+                  true
+                );
+              } else if (g === 255) {
+                block = new Block(
+                  { x: x * 16 + 8, y: y * 16 + 8 },
+                  { x: 0, y: 0 },
+                  { x: 16, y: 16 },
+                  'green',
+                  false,
+                  false
+                );
+              } else {
+                block = new Block(
+                  { x: x * 16 + 8, y: y * 16 + 8 },
+                  { x: 0, y: -1 },
+                  { x: 16, y: 16 },
+                  'black',
+                  true,
+                  true,
+                  30
+                );
+              }
+              blocks.push(block);
+            }
+          }
+        }
+      }
+    );
+  }
 
   callback(socket) {
     socket.join(this.roomId);
 
+    const spawnPos = this.levelConfig.spawns[
+      Object.keys(this.players).length
+    ] || {
+      x: 0,
+      y: 0,
+    };
+    const player = new Player(spawnPos, 100, 0.4, 80);
     const playerId = uuidv4();
-    let player = (this.players[playerId] = new Player(
-      { x: 40, y: 20 },
-      100,
-      0.6,
-      100
-    ));
+    this.players[playerId] = player;
 
     socket.emit('get_player', playerId);
 
@@ -90,36 +149,53 @@ module.exports = class Room {
       }
 
       // IF NO COLLISIONS...
-      if (!anyCollisions(modifiedPlayer, Object.values(this.players))) {
+      if (
+        !anyCollisions(modifiedPlayer, Object.values(this.players), this.blocks)
+      ) {
         // ...UPDATE THE PLAYER
         player.position = modifiedPlayer.position;
       }
 
       // CHECK COLLISIONS...
-      function anyCollisions(collider, players) {
+      function anyCollisions(collider, players, blocks) {
+        // ...IN BOUNDS
+        if (Player.inBounds(collider)) {
+          return true;
+        }
         // ...WITH OTHER PLAYERS
         for (const other of players.filter((p) => p !== player)) {
           if (Player.collide(collider, other)) {
             return true;
           }
         }
-
         // ...WITH BLOCKS
-
+        for (const block of blocks.filter((b) => b.collidable)) {
+          if (Player.collide(collider, block)) {
+            return true;
+          }
+        }
         // NO COLLISIONS
         return false;
       }
     });
 
+    socket.on('disconnect', () => {
+      delete this.players[playerId];
+    });
+
+    // ONLY ONCE
     this.io.to(this.roomId).emit('state', this.state);
   }
 
   update(deltaTime) {
+    // MOVE BULLETS
     for (let i = 0; i < this.bullets.length; i++) {
       const bullet = this.bullets[i];
       bullet.position.x += bullet.direction.x * bullet.speed * deltaTime;
       bullet.position.y += bullet.direction.y * bullet.speed * deltaTime;
 
+      // CHECK COLLISIONS...
+      // ... WITH PLAYERS
       for (const id of Object.keys(this.players)) {
         const player = this.players[id];
         if (Bullet.collide(bullet, player)) {
@@ -130,8 +206,27 @@ module.exports = class Room {
           this.bullets.splice(i, 1);
         }
       }
+      // ... WITH BLOCKS
+      for (const block of this.blocks.filter((b) => b.destroyable)) {
+        if (Bullet.collide(bullet, block)) {
+          block.health -= bullet.damage;
+          if (block.health <= 0) {
+            const blockIndex = this.blocks.findIndex((b) => b === block);
+            this.blocks.splice(blockIndex, 1);
+          }
+          this.bullets.splice(i, 1);
+        }
+      }
     }
 
-    this.io.to(this.roomId).emit('update', this.players, this.bullets);
+    this.io
+      .to(this.roomId)
+      .emit(
+        'update',
+        this.players,
+        this.bullets,
+        this.blocks,
+        this.levelConfig
+      );
   }
 };

@@ -24,18 +24,14 @@ app.post('/rooms', (req, res) => {
 });
 
 app.post('/create', (req, res) => {
-  const { name, password } = req.body;
+  const { name, password, levelIndex } = req.body;
   const roomId = uuidv4();
-  rooms[roomId] = new Room({ roomId, name, password }, io);
-  // const playerId = uuidv4();
-  // rooms[roomId].join(playerId);
+  rooms[roomId] = new Room({ roomId, name, password, levelIndex }, io);
   res.render('pages/game', { roomId });
 });
 
 app.post('/join', (req, res) => {
   const { roomId } = req.body;
-  // const playerId = uuidv4();
-  // rooms[roomId].join(playerId);
   res.render('pages/game', { roomId });
 });
 

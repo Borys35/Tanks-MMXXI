@@ -65,6 +65,10 @@ body {
   display: block;
 }
 
+.radio-group {
+  padding: 2px 0 0 8px;
+}
+
 .list {
   padding: 10px 15px;
 }
