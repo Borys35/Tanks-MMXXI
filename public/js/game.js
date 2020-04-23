@@ -14,6 +14,7 @@ let players = {},
 const playerImgs = [],
   bulletImgs = [],
   blockImgs = [];
+let config = null;
 let gameState = null;
 
 const socket = io({ query: { roomId } });
@@ -23,7 +24,8 @@ socket.on('get_player', (id) => {
 });
 
 socket.on('update', (allPlayers, allBullets, allBlocks, levelConfig) => {
-  const { type } = levelConfig;
+  config = levelConfig;
+  const { type } = config;
 
   // SET PLAYERS
   players = allPlayers;
@@ -109,6 +111,12 @@ function onKey(event, key, pressed) {
 //#region CLIENT GAME LOOP
 setInterval(() => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (config) {
+    if (config.type === 'ships') ctx.fillStyle = '#008';
+    else if (config.type === 'planes') ctx.fillStyle = '#99F';
+    else ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
 
   //#region DRAW OBJECTS
   // DRAW PLAYERS

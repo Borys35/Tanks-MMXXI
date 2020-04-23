@@ -20,14 +20,22 @@ app.get('/', (req, res) => {
 
 app.post('/rooms', (req, res) => {
   const { username } = req.body;
-  res.render('pages/rooms', { rooms });
+  if (username) {
+    res.render('pages/rooms', { rooms });
+  } else {
+    res.redirect('/');
+  }
 });
 
 app.post('/create', (req, res) => {
   const { name, password, levelIndex } = req.body;
-  const roomId = uuidv4();
-  rooms[roomId] = new Room({ roomId, name, password, levelIndex }, io);
-  res.render('pages/game', { roomId });
+  if (name) {
+    const roomId = uuidv4();
+    rooms[roomId] = new Room({ roomId, name, password, levelIndex }, io);
+    res.render('pages/game', { roomId });
+  } else {
+    res.redirect('/');
+  }
 });
 
 app.post('/join', (req, res) => {
