@@ -13,14 +13,6 @@
             <input type="text" name="name" placeholder="Enter room name..." />
           </div>
           <div class="form-group">
-            <label>Password (not required)</label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Enter password..."
-            />
-          </div>
-          <div class="form-group">
             <label>Level</label>
             <div class="radio-group">
               <input
@@ -52,16 +44,19 @@
           <form method="post" action="/join">
             <ul>
               <% const roomArray = Object.entries(rooms); %> <% if
-              (roomArray.length) { roomArray.forEach(([id, { name }]) => { %>
+              (roomArray.length) { roomArray.forEach(([id, room]) => { %>
               <li>
+                <% if (room.state.hasStarted) { %>
+                <span class="closed"><%= room.name %></span> <% } else { %>
                 <button
                   class="link"
                   type="submit"
                   name="roomId"
                   value="<%= id %>"
                 >
-                  <%= name %>
+                  <%= room.name %>
                 </button>
+                <% } %>
               </li>
               <% }); } else { %>No rooms<% } %>
             </ul>

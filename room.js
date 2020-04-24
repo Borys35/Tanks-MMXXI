@@ -1,6 +1,7 @@
 const getPixels = require('get-pixels');
 const uuidv4 = require('uuid').v4;
 
+const index = require('./index');
 const Player = require('./components/player');
 const Bullet = require('./components/bullet');
 const Block = require('./components/block');
@@ -8,14 +9,14 @@ const { levels } = require('./gameconfig.json');
 
 module.exports = class Room {
   constructor(settings, io) {
-    const { roomId, name, password, levelIndex } = settings;
+    const { roomId, name, levelIndex } = settings;
     this.roomId = roomId;
     this.name = name;
-    this.password = password;
     this.players = {};
     this.bullets = [];
     this.blocks = [];
-    this.state = { secondsToStart: 5, hasStarted: false };
+    this.state = { secondsToStart: 20, hasStarted: false };
+    this.removeRoom = () => index.removeRoom(this.roomId);
 
     this.io = io;
 
@@ -181,6 +182,9 @@ module.exports = class Room {
 
     socket.on('disconnect', () => {
       delete this.players[playerId];
+      if (Object.keys(this.players).length <= 0) {
+        this.removeRoom();
+      }
     });
 
     // ONLY ONCE
@@ -202,6 +206,9 @@ module.exports = class Room {
           player.health -= bullet.damage;
           if (player.health <= 0) {
             delete this.players[id];
+            if (Object.keys(this.players).length <= 0) {
+              this.removeRoom();
+            }
           }
           this.bullets.splice(i, 1);
         }

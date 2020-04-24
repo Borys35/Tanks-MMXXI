@@ -13,6 +13,9 @@ app.use(express.json());
 app.set('view engine', 'ejs');
 
 const rooms = {};
+module.exports.removeRoom = (roomId) => {
+  delete rooms[roomId];
+};
 
 app.get('/', (req, res) => {
   res.render('pages/index');
@@ -31,7 +34,7 @@ app.post('/create', (req, res) => {
   const { name, password, levelIndex } = req.body;
   if (name) {
     const roomId = uuidv4();
-    rooms[roomId] = new Room({ roomId, name, password, levelIndex }, io);
+    rooms[roomId] = new Room({ roomId, name, levelIndex }, io);
     res.render('pages/game', { roomId });
   } else {
     res.redirect('/');

@@ -61,6 +61,10 @@ body {
   appearance: none;
 }
 
+.form input[type='text'] {
+  width: 100%;
+}
+
 .form-group > * {
   display: block;
 }
@@ -81,12 +85,23 @@ body {
   color: #fff;
   outline: none;
 }
+
 button.link {
   background: none;
   border: none;
   text-decoration: underline;
   cursor: pointer;
   font-size: 13px;
+}
+
+.closed {
+  color: #d00;
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+.closed::after {
+  content: ' (closed)';
 }
 
 .footer {
