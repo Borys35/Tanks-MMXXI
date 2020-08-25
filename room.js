@@ -15,7 +15,11 @@ module.exports = class Room {
     this.players = {};
     this.bullets = [];
     this.blocks = [];
-    this.state = { secondsToStart: 20, hasStarted: false };
+    this.state = {
+      startTimestamp: Date.now(),
+      secondsToStart: 20,
+      hasStarted: false,
+    };
     this.removeRoom = () => index.removeRoom(this.roomId);
 
     this.io = io;
@@ -107,7 +111,7 @@ module.exports = class Room {
       const deltaTime = (nowTime - lastTime) / 10;
       lastTime = nowTime;
 
-      if (!this.state.hasStarted) return;
+      if (!this.state.hasStarted || player.health <= 0) return;
 
       // INPUT ACTIONS
       timer += deltaTime;
@@ -164,7 +168,9 @@ module.exports = class Room {
           return true;
         }
         // ...WITH OTHER PLAYERS
-        for (const other of players.filter((p) => p !== player)) {
+        for (const other of players.filter(
+          (p) => p !== player && p.health > 0
+        )) {
           if (Player.collide(collider, other)) {
             return true;
           }
@@ -202,15 +208,18 @@ module.exports = class Room {
       // ... WITH PLAYERS
       for (const id of Object.keys(this.players)) {
         const player = this.players[id];
+        if (player.health <= 0) continue;
+
         if (Bullet.collide(bullet, player)) {
           player.health -= bullet.damage;
-          if (player.health <= 0) {
-            delete this.players[id];
-            if (Object.keys(this.players).length <= 0) {
-              this.removeRoom();
-            }
-          }
+          // if (player.health <= 0) {
+          //   delete this.players[id];
+          //   if (Object.keys(this.players).length <= 0) {
+          //     this.removeRoom();
+          //   }
+          // }
           this.bullets.splice(i, 1);
+          break;
         }
       }
       // ... WITH BLOCKS
@@ -222,6 +231,7 @@ module.exports = class Room {
             this.blocks.splice(blockIndex, 1);
           }
           this.bullets.splice(i, 1);
+          break;
         }
       }
     }

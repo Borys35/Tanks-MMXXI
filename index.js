@@ -43,7 +43,13 @@ app.post('/create', (req, res) => {
 
 app.post('/join', (req, res) => {
   const { roomId } = req.body;
-  res.render('pages/game', { roomId });
+  const room = rooms[roomId];
+  if (
+    room.state.startTimestamp / 1000 + room.state.secondsToStart >
+    Date.now() / 1000
+  )
+    res.render('pages/game', { roomId });
+  else res.redirect('/');
 });
 
 app.get('*', (req, res) => {

@@ -7,6 +7,11 @@ const ctx = canvas.getContext('2d');
 const script = document.currentScript;
 const roomId = script.getAttribute('roomId');
 
+Object.filter = (obj, predicate) =>
+  Object.keys(obj)
+    .filter((key) => predicate(obj[key]))
+    .reduce((acc, key) => ((acc[key] = obj[key]), acc), {});
+
 let playerId = null;
 let players = {},
   bullets = [],
@@ -28,7 +33,7 @@ socket.on('update', (allPlayers, allBullets, allBlocks, levelConfig) => {
   const { type } = config;
 
   // SET PLAYERS
-  players = allPlayers;
+  players = Object.filter(allPlayers, (player) => player.health > 0);
   // SET PLAYERS' IMAGES
   if (playerImgs.length !== Object.keys(players).length) {
     playerImgs.length = Object.keys(players).length;
